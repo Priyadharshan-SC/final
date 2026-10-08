@@ -1,0 +1,109 @@
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Camera, 
+  Layers, 
+  History, 
+  Database, 
+  Cpu, 
+  BarChart2, 
+  Settings, 
+  CpuIcon,
+  CheckCircle2
+} from 'lucide-react';
+
+interface SidebarProps {
+  currentLine?: string;
+  isOnline?: boolean;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ currentLine = 'Factory Line - 01', isOnline = true }) => {
+  const navItems = [
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Live Inspection', path: '/live-inspection', icon: Camera },
+    { label: 'Batch Inspection', path: '/batch-inspection', icon: Layers },
+    { label: 'Inspection History', path: '/history', icon: History },
+    { label: 'Dataset Management', path: '/datasets', icon: Database },
+    { label: 'Model Management', path: '/models', icon: Cpu },
+    { label: 'Reports', path: '/reports', icon: BarChart2 },
+    { label: 'Settings', path: '/settings', icon: Settings },
+  ];
+
+  return (
+    <aside className="w-64 bg-[#080D1A] border-r border-industrial-border flex flex-col justify-between flex-shrink-0 select-none z-30">
+      {/* Brand Header */}
+      <div>
+        <div className="px-5 py-5 border-b border-industrial-border/60">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-glow-cyan">
+              <CpuIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+                PCBInspect <span className="text-cyan-400 font-mono">AI</span>
+              </h1>
+              <p className="text-[10px] text-slate-400 font-medium">Smart Inspection. Zero Defects.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="p-3 space-y-1 mt-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 ${
+                    isActive
+                      ? 'bg-blue-600 text-white font-semibold shadow-glow-blue'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-industrial-800/60'
+                  }`
+                }
+              >
+                <Icon className="w-4 h-4" />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Bottom Factory Line Status Card */}
+      <div className="p-3 border-t border-industrial-border/60">
+        <div className="bg-[#0D1527] border border-industrial-border rounded-xl p-3.5 shadow-md">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                <Layers className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-semibold text-slate-200">{currentLine}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+              <span className="text-[11px] font-medium text-emerald-400">{isOnline ? 'Online' : 'Offline'}</span>
+            </div>
+          </div>
+
+          <div className="space-y-1 text-[11px] font-mono text-slate-400 border-t border-industrial-border/40 pt-2">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Model :</span>
+              <span className="text-slate-300 font-medium">ESP32</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Camera :</span>
+              <span className="text-emerald-400 font-medium">Connected</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Version :</span>
+              <span className="text-slate-400">v1.0.8</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+};
