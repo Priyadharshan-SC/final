@@ -90,3 +90,13 @@ body {
   box-shadow: 0 0 12px #06B6D4;
   animation: radar-sweep 2.5s ease-in-out infinite alternate;
 }
+
+@keyframes conveyorSlide {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 28px 0;
+  }
+}
+

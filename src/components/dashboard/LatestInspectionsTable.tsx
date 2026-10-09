@@ -3,6 +3,7 @@ import { Inspection } from '../../types/inspection';
 import { StatusBadge } from '../common/StatusBadge';
 import { Eye, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatImageSrc } from '../../utils/imageUtils';
 
 interface LatestInspectionsTableProps {
   inspections: Inspection[];
@@ -46,8 +47,16 @@ export const LatestInspectionsTable: React.FC<LatestInspectionsTableProps> = ({ 
                   </Link>
                 </td>
                 <td className="py-3 px-3">
-                  <div className="w-9 h-6 rounded bg-[#091A14] border border-emerald-800/60 flex items-center justify-center relative overflow-hidden">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/80" />
+                  <div className="w-10 h-8 rounded bg-[#091A14] border border-slate-700/60 flex items-center justify-center relative overflow-hidden">
+                    {item.annotatedImageBase64 || item.imageUrl ? (
+                      <img
+                        src={formatImageSrc(item.annotatedImageBase64 || item.imageUrl)}
+                        alt={item.boardId}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/80" />
+                    )}
                     {item.status === 'DEFECTIVE' && (
                       <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-rose-500 ring-1 ring-black" />
                     )}

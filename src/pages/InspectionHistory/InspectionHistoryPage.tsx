@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { PcbViewer } from '../../components/inspection/PcbViewer';
 import { mockInspections } from '../../services/mock/mockData';
 import { Inspection } from '../../types/inspection';
+import { inspectionApi } from '../../services/api/inspectionApi';
 import { 
   History, 
   Calendar, 
@@ -20,22 +21,48 @@ import {
   Layers
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useDataset } from '../../context/DatasetContext';
+import { formatImageSrc } from '../../utils/imageUtils';
 
 export const InspectionHistoryPage: React.FC = () => {
+  const { activeDataset, activeProfile } = useDataset();
   const [selectedInspection, setSelectedInspection] = useState<Inspection>(mockInspections[0]);
   const [statusFilter, setStatusFilter] = useState('All');
-  const [boardFilter, setBoardFilter] = useState('ESP32');
+  const [boardFilter, setBoardFilter] = useState('All');
   const [defectFilter, setDefectFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>(['INS-001']);
+  const [records, setRecords] = useState<(Inspection & { num?: number })[]>(
+    mockInspections.map((item, idx) => ({ ...item, num: idx + 1 }))
+  );
   const navigate = useNavigate();
 
-  // 10 Records matching Stitch screenshot 29dcea58f60341c09dbac9ec7855cd1b
-  const records = mockInspections.map((item, idx) => ({
-    ...item,
-    num: idx + 1,
-  }));
+  useEffect(() => {
+    let isMounted = true;
+    inspectionApi.queryHistory({
+      page: currentPage,
+      limit: 10,
+      status: statusFilter !== 'All' ? statusFilter : undefined,
+      defectType: defectFilter !== 'All' ? defectFilter : undefined,
+      search: searchQuery || undefined
+    }).then((res) => {
+      if (isMounted && res && res.items && res.items.length > 0) {
+        const mapped = res.items.map((item, idx) => ({
+          ...item,
+          num: (currentPage - 1) * 10 + idx + 1
+        }));
+        setRecords(mapped);
+        if (mapped.length > 0) {
+          setSelectedInspection(mapped[0]);
+          setSelectedIds([mapped[0].id]);
+        }
+      }
+    }).catch((err) => {
+      console.warn('Failed to load history records:', err);
+    });
+    return () => { isMounted = false; };
+  }, [currentPage, statusFilter, defectFilter, searchQuery, activeDataset]);
 
   const filteredRecords = records.filter((r) => {
     if (statusFilter !== 'All' && r.status !== statusFilter) return false;
@@ -143,11 +170,24 @@ export const InspectionHistoryPage: React.FC = () => {
               className="bg-transparent text-slate-200 font-medium focus:outline-none cursor-pointer"
             >
               <option value="All" className="bg-[#09101D]">All</option>
-              <option value="Solder Bridge" className="bg-[#09101D]">Solder Bridge</option>
-              <option value="Missing Component" className="bg-[#09101D]">Missing Component</option>
-              <option value="Insufficient Solder" className="bg-[#09101D]">Insufficient Solder</option>
-              <option value="Misalignment" className="bg-[#09101D]">Misalignment</option>
-              <option value="Damaged Component" className="bg-[#09101D]">Damaged Component</option>
+              {activeDataset === 'water_bottle' ? (
+                <>
+                  <option value="broken_large" className="bg-[#09101D]">broken_large</option>
+                  <option value="broken_small" className="bg-[#09101D]">broken_small</option>
+                  <option value="contamination" className="bg-[#09101D]">contamination</option>
+                  <option value="No Defect" className="bg-[#09101D]">No Defect</option>
+                </>
+              ) : (
+                <>
+                  <option value="Short" className="bg-[#09101D]">Short</option>
+                  <option value="Missing_hole" className="bg-[#09101D]">Missing_hole</option>
+                  <option value="Mouse_bite" className="bg-[#09101D]">Mouse_bite</option>
+                  <option value="Open_circuit" className="bg-[#09101D]">Open_circuit</option>
+                  <option value="Spur" className="bg-[#09101D]">Spur</option>
+                  <option value="Spurious_copper" className="bg-[#09101D]">Spurious_copper</option>
+                  <option value="No Defect" className="bg-[#09101D]">No Defect</option>
+                </>
+              )}
             </select>
           </div>
         </div>
@@ -285,8 +325,19 @@ export const InspectionHistoryPage: React.FC = () => {
                           {row.boardId}
                         </td>
                         <td className="py-3 px-3">
-                          <div className="w-8 h-6 rounded bg-[#0A1A14] border border-emerald-800/60 flex items-center justify-center">
-                            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/70" />
+                          <div className="w-10 h-7 rounded bg-[#0A1A14] border border-slate-700/60 overflow-hidden flex items-center justify-center relative">
+                            {row.annotatedImageBase64 || row.imageUrl ? (
+                              <img
+                                src={formatImageSrc(row.annotatedImageBase64 || row.imageUrl)}
+                                alt={row.boardId}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/70" />
+                            )}
+                            {row.status === 'DEFECTIVE' && (
+                              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-rose-500 ring-1 ring-black" />
+                            )}
                           </div>
                         </td>
                         <td className="py-3 px-3">
@@ -370,12 +421,17 @@ export const InspectionHistoryPage: React.FC = () => {
               </button>
             </div>
 
-            {/* PCB Viewer Box */}
+            {/* Inspection Viewer Box */}
             <div className="my-2">
               <PcbViewer
                 boardId={selectedInspection.boardId}
+                unitLabel={activeDataset === 'water_bottle' ? 'Bottle Unit' : 'PCB Board'}
                 status={selectedInspection.status}
                 defects={selectedInspection.defects}
+                imageUrl={selectedInspection.imageUrl}
+                annotatedImageBase64={selectedInspection.annotatedImageBase64}
+                heatmapBase64={selectedInspection.heatmapBase64}
+                engineName={activeProfile?.model_metrics?.engine_name || (activeDataset === 'water_bottle' ? 'PatchCore Anomaly Engine' : 'YOLO11 Edge Engine')}
                 className="min-h-[220px]"
                 interactive={false}
               />
@@ -391,17 +447,25 @@ export const InspectionHistoryPage: React.FC = () => {
             {/* Metadata key-value list */}
             <div className="space-y-2 text-xs font-mono border-t border-industrial-border/60 pt-3">
               <div className="flex justify-between">
-                <span className="text-slate-400">Board ID</span>
+                <span className="text-slate-400">{activeDataset === 'water_bottle' ? 'Unit ID' : 'Board ID'}</span>
                 <span className="text-slate-200 font-semibold">{selectedInspection.boardId}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Board Type</span>
+                <span className="text-slate-400">Product Category</span>
                 <span className="text-slate-200">{selectedInspection.boardType}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Status</span>
                 <StatusBadge status={selectedInspection.status} size="sm" />
               </div>
+              {selectedInspection.anomalyScore !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Anomaly Score</span>
+                  <span className={`font-bold ${selectedInspection.status === 'GOOD' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {selectedInspection.anomalyScore.toFixed(4)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-400">Confidence</span>
                 <span className="text-emerald-400 font-bold">{selectedInspection.confidence}%</span>
@@ -415,8 +479,10 @@ export const InspectionHistoryPage: React.FC = () => {
                 <span className="text-slate-300">{selectedInspection.timestamp}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Model Version</span>
-                <span className="text-slate-300">PatchCore v1.0.0</span>
+                <span className="text-slate-400">AI Engine</span>
+                <span className="text-slate-300">
+                  {selectedInspection.heatmapBase64 ? 'PatchCore ResNet18' : 'YOLO11n Edge'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Device ID</span>

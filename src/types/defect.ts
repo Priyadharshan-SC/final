@@ -10,7 +10,12 @@ export type DefectType =
   | 'Short Circuit'
   | 'Scratch'
   | 'Damaged Component'
-  | 'Other Anomaly';
+  | 'Other Anomaly'
+  | 'broken_large'
+  | 'broken_small'
+  | 'contamination'
+  | 'anomaly'
+  | string;
 
 export interface BoundingBox {
   x: number;

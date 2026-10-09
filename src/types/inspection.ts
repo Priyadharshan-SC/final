@@ -11,6 +11,11 @@ export interface Inspection {
   confidence: number;
   inferenceTimeMs: number;
   imageUrl?: string;
+  annotatedImageBase64?: string;
+  heatmapBase64?: string;
+  anomalyScore?: number;
+  threshold?: number;
+  datasetId?: string;
   defects: Defect[];
   modelVersion?: string;
   deviceId?: string;
@@ -19,6 +24,8 @@ export interface Inspection {
   reviewed?: boolean;
   reviewStatus?: 'CONFIRMED' | 'FALSE_POSITIVE' | 'FALSE_NEGATIVE' | 'UNREVIEWED';
   reviewNotes?: string;
+  isSimulated?: boolean;
+  simulationBatchId?: string;
 }
 
 export interface InspectionFilter {

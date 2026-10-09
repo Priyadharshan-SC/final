@@ -31,6 +31,14 @@ __pycache__/
 .coverage
 htmlcov/
 
+# Local SQLite Databases & Storage
+backend/data/*.db
+backend/data/*.sqlite*
+backend/uploads/
+*.db
+*.sqlite
+*.sqlite3
+
 # Machine Learning Weights & Large Model Binaries
 *.pt
 *.pth
@@ -76,3 +84,14 @@ Desktop.ini
 # Temporary Test Files & Raw Scrape Dumps
 test_*.png
 stitch_downloads/
+
+# Large Datasets & Archives
+datasets/
+bottle.tar.xz
+*.zip
+*.tar
+*.tar.gz
+*.tar.xz
+*.tgz
+*.rar
+*.7z

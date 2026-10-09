@@ -24,18 +24,28 @@ export const InspectionDetailsPage: React.FC = () => {
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [selectedDefectId, setSelectedDefectId] = useState<string | null>(null);
   const [reviewStatus, setReviewStatus] = useState<string | null>(null);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     if (id) {
-      inspectionApi.getInspectionById(id).then((res) => {
-        if (res) {
-          setInspection(res);
-          if (res.defects.length > 0) {
-            setSelectedDefectId(res.defects[0].id);
+      inspectionApi.getInspectionById(id)
+        .then((res) => {
+          if (isMounted && res) {
+            setInspection(res);
+            if (res.defects.length > 0) {
+              setSelectedDefectId(res.defects[0].id);
+            }
           }
-        }
-      });
+        })
+        .catch((err) => {
+          if (isMounted) {
+            console.warn('Failed to load inspection record', err);
+            setLoadingError(err.message || 'Inspection record could not be loaded');
+          }
+        });
     }
+    return () => { isMounted = false; };
   }, [id]);
 
   const handleReview = async (action: 'CONFIRMED' | 'FALSE_POSITIVE' | 'FALSE_NEGATIVE') => {
@@ -51,8 +61,20 @@ export const InspectionDetailsPage: React.FC = () => {
 
   if (!inspection) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] text-slate-400">
-        <span className="text-sm">Loading inspection record...</span>
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400 gap-3">
+        {loadingError ? (
+          <>
+            <span className="text-sm text-rose-400 font-semibold">{loadingError}</span>
+            <button
+              onClick={() => navigate('/history')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-500 transition"
+            >
+              Back to Inspection History
+            </button>
+          </>
+        ) : (
+          <span className="text-sm animate-pulse">Loading inspection record...</span>
+        )}
       </div>
     );
   }
@@ -104,10 +126,15 @@ export const InspectionDetailsPage: React.FC = () => {
 
             <PcbViewer
               boardId={inspection.boardId}
+              unitLabel={inspection.boardType?.toLowerCase().includes('bottle') ? 'Bottle Unit' : 'PCB Board'}
               status={inspection.status}
               defects={inspection.defects}
               selectedDefectId={selectedDefectId}
               onSelectDefect={(defId) => setSelectedDefectId(defId)}
+              imageUrl={inspection.imageUrl}
+              annotatedImageBase64={inspection.annotatedImageBase64}
+              heatmapBase64={inspection.heatmapBase64}
+              engineName={inspection.heatmapBase64 ? 'PatchCore Feature Anomaly Engine (RTX 2050)' : 'YOLO11 Edge Engine'}
               className="min-h-[460px]"
             />
           </div>
@@ -125,7 +152,9 @@ export const InspectionDetailsPage: React.FC = () => {
               </div>
               <div className="bg-industrial-950 p-3 rounded-lg border border-industrial-border/60">
                 <span className="text-[10px] text-slate-500">2. INFERENCE RUN</span>
-                <p className="text-cyan-400 font-semibold mt-1">PatchCore ESP32</p>
+                <p className="text-cyan-400 font-semibold mt-1">
+                  {inspection.heatmapBase64 ? 'PatchCore Anomaly' : 'YOLO11 Detector'}
+                </p>
                 <span className="text-[10px] text-slate-400">{inspection.inferenceTimeMs} ms latency</span>
               </div>
               <div className="bg-industrial-950 p-3 rounded-lg border border-industrial-border/60">
@@ -140,7 +169,7 @@ export const InspectionDetailsPage: React.FC = () => {
                 <p className="text-slate-200 font-semibold mt-1">
                   {inspection.reviewed ? inspection.reviewStatus : 'Pending Human Audit'}
                 </p>
-                <span className="text-[10px] text-slate-400">Priyadharshan (Admin)</span>
+                <span className="text-[10px] text-slate-400">QA Operator</span>
               </div>
             </div>
           </div>
@@ -155,20 +184,30 @@ export const InspectionDetailsPage: React.FC = () => {
             </h3>
             <div className="space-y-2.5 text-xs font-mono">
               <div className="flex justify-between border-b border-industrial-border/40 pb-1.5">
-                <span className="text-slate-400">Board Identifier</span>
+                <span className="text-slate-400">Unit Identifier</span>
                 <span className="text-cyan-400 font-bold">{inspection.boardId}</span>
               </div>
               <div className="flex justify-between border-b border-industrial-border/40 pb-1.5">
-                <span className="text-slate-400">Board Architecture</span>
+                <span className="text-slate-400">Product Category</span>
                 <span className="text-slate-200">{inspection.boardType}</span>
               </div>
               <div className="flex justify-between border-b border-industrial-border/40 pb-1.5">
                 <span className="text-slate-400">Inference Engine</span>
-                <span className="text-slate-200">PatchCore v1.0.0</span>
+                <span className="text-slate-200">
+                  {inspection.heatmapBase64 ? 'PatchCore ResNet18 (CUDA)' : 'YOLO11n Edge (CUDA)'}
+                </span>
               </div>
+              {inspection.anomalyScore !== undefined && (
+                <div className="flex justify-between border-b border-industrial-border/40 pb-1.5">
+                  <span className="text-slate-400">Anomaly Score</span>
+                  <span className={`font-bold ${inspection.status === 'GOOD' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {inspection.anomalyScore.toFixed(4)} (Thresh: {inspection.threshold || 0.0070})
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between border-b border-industrial-border/40 pb-1.5">
                 <span className="text-slate-400">Station / Line</span>
-                <span className="text-slate-200">LINE-01 (Main SMT)</span>
+                <span className="text-slate-200">LINE-01 (Automated Optical Inspection)</span>
               </div>
               <div className="flex justify-between border-b border-industrial-border/40 pb-1.5">
                 <span className="text-slate-400">Confidence Score</span>

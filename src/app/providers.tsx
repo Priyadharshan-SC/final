@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import { DatasetProvider } from '../context/DatasetContext';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -7,7 +8,9 @@ interface ProvidersProps {
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
     <div className="dark">
-      {children}
+      <DatasetProvider>
+        {children}
+      </DatasetProvider>
     </div>
   );
 };

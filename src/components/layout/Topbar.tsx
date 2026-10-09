@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Bell, Sun, Moon, ShieldCheck, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { DatasetSelector } from './DatasetSelector';
 
 interface TopbarProps {
   onSearch?: (query: string) => void;
@@ -23,15 +24,20 @@ export const Topbar: React.FC<TopbarProps> = ({ onSearch }) => {
 
   return (
     <header className="h-16 bg-[#080D1A] border-b border-industrial-border px-6 flex items-center justify-between gap-4 z-20">
+      {/* Left: Dataset Selector */}
+      <div className="flex items-center gap-3">
+        <DatasetSelector />
+      </div>
+
       {/* Search Input */}
-      <form onSubmit={handleSearchSubmit} className="flex-1 max-w-lg">
+      <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md hidden md:block">
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            placeholder="Search boards, inspections, defects..."
+            placeholder="Search items, inspections, defects..."
             className="w-full bg-[#0E1626] border border-industrial-border rounded-lg pl-10 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/30 transition font-sans"
           />
         </div>
